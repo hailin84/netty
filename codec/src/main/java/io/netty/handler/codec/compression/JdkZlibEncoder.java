@@ -46,6 +46,7 @@ public class JdkZlibEncoder extends ZlibEncoder {
     private final CRC32 crc = new CRC32();
     private static final byte[] gzipHeader = {0x1f, (byte) 0x8b, Deflater.DEFLATED, 0, 0, 0, 0, 0, 0, 0};
     private boolean writeHeader = true;
+    private static final int THREAD_POOL_DELAY_SECONDS = 10;
 
     /**
      * Creates a new zlib encoder with the default compression level ({@code 6})
@@ -94,11 +95,9 @@ public class JdkZlibEncoder extends ZlibEncoder {
      * @throws CompressionException if failed to initialize zlib
      */
     public JdkZlibEncoder(ZlibWrapper wrapper, int compressionLevel) {
-        if (compressionLevel < 0 || compressionLevel > 9) {
-            throw new IllegalArgumentException(
-                    "compressionLevel: " + compressionLevel + " (expected: 0-9)");
-        }
+        ObjectUtil.checkInRange(compressionLevel, 0, 9, "compressionLevel");
         ObjectUtil.checkNotNull(wrapper, "wrapper");
+
         if (wrapper == ZlibWrapper.ZLIB_OR_NONE) {
             throw new IllegalArgumentException(
                     "wrapper '" + ZlibWrapper.ZLIB_OR_NONE + "' is not " +
@@ -138,10 +137,7 @@ public class JdkZlibEncoder extends ZlibEncoder {
      * @throws CompressionException if failed to initialize zlib
      */
     public JdkZlibEncoder(int compressionLevel, byte[] dictionary) {
-        if (compressionLevel < 0 || compressionLevel > 9) {
-            throw new IllegalArgumentException(
-                    "compressionLevel: " + compressionLevel + " (expected: 0-9)");
-        }
+        ObjectUtil.checkInRange(compressionLevel, 0, 9, "compressionLevel");
         ObjectUtil.checkNotNull(dictionary, "dictionary");
 
         wrapper = ZlibWrapper.ZLIB;
@@ -283,7 +279,7 @@ public class JdkZlibEncoder extends ZlibEncoder {
                 public void run() {
                     ctx.close(promise);
                 }
-            }, 10, TimeUnit.SECONDS); // FIXME: Magic number
+            }, THREAD_POOL_DELAY_SECONDS, TimeUnit.SECONDS);
         }
     }
 
